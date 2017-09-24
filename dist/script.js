@@ -10,6 +10,8 @@ class FileUpload {
         this.vaildFiles = obj.vaildFiles;
         this.overLayClass = obj.overLayClass;
         this.popupClass = obj.popupClass;
+        this.userData = obj.userData;
+        this.actionURL = obj.actionURL;
         this.file = {};
         this.fileType = '';
         this.overlayStyle = `
@@ -54,6 +56,8 @@ class FileUpload {
             throw new Error(`Target should not be empty`);
         if (!this.isString(this.targetElement))
             throw new TypeError(`Target should be a String`);
+        if (this.actionURL && !this.isString(this.actionURL))
+            throw new TypeError(`actionURL should be a String`);
         if (this.onSuccess && !this.isFunction(this.onSuccess))
             throw new TypeError(`onSuccess should be a Function`);
         if (this.onError && !this.isFunction(this.onError))
@@ -79,11 +83,10 @@ class FileUpload {
     createFileElement() {
         const fileElement = document.createElement('input');
         fileElement.setAttribute('type','file');
-        fileElement.setAttribute('onchange',this.startReading);
         fileElement.addEventListener('change', e => {
             const file = e.target.files[0];
             this.parseUpload(file);
-        })
+        });
         fileElement.click();
         //added return to complete test case
         return fileElement;
@@ -114,7 +117,7 @@ class FileUpload {
             previewDiv.children[0].textContent = 'No Preview Available';
         
         previewDiv.addEventListener('click',()=>{
-            this.handleClose(previewDiv)
+            this.handleClose(previewDiv);
         })
         document.body.appendChild(previewDiv);
         
@@ -128,23 +131,50 @@ class FileUpload {
             name: this.file.name,
             size: this.file.size,
             type: this.file.type,
-            lastModified: this.file.lastModified,
-        }
+            lastModified: this.file.lastModified
+        };
+        if(this.userData)
+            response.userData = this.userData;
+        if(this.actionURL && this.actionURL!=='') this.uploadFileToServer(response);
+        else if(typeof this.onSuccess ==='function') this.onSuccess(response);
+    }
 
-        if(typeof this.onSuccess ==='function') this.onSuccess(response)
+    //handles file upload to given actionURL via XHR request
+    uploadFileToServer(response) {
+        const self = this;
+        const XHR = new XMLHttpRequest();
+        XHR.open("POST", this.actionURL, false);
+        XHR.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        XHR.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                if(typeof self.onSuccess ==='function') self.onSuccess(response);
+            }else{
+                self.handleFail('Failed to Upload - server error');
+            }
+        }
+        XHR.send(this.formatData(response));
+    }
+
+    //converts object to query parameter like string
+    formatData(response) {
+        let stringParamsArray = [];
+        Object.getOwnPropertyNames(response).forEach(
+            (key) => stringParamsArray.push(`${key}=${response[key]}`)
+        );
+        return stringParamsArray.join('&');
     }
 
     //removes preview div and triggers user supplied onclose action
     handleClose(previewDiv) {
         if (previewDiv) document.body.removeChild(previewDiv);
-        if(typeof this.onClose ==='function') this.onClose.call()
+        if(typeof this.onClose ==='function') this.onClose.call();
     }
 
     //triggers user supplied onFail action
     handleFail (err) {
         if(typeof (this.onFail) ==='function') 
-            this.onFail(err)
-        this.log(err)
+            this.onFail(err);
+        this.log(err);
     }
     
     //returns HTMLDivObject with complete popup structure
@@ -157,8 +187,8 @@ class FileUpload {
         previewDiv.style.cssText = this.popupStyle;
         previewDiv.className = this.popupClass || '';
         previewImg.style.cssText = this.imageStyle;
-        previewDiv.appendChild(previewImg)
-        previewOverlayDiv.appendChild(previewDiv)
+        previewDiv.appendChild(previewImg);
+        previewOverlayDiv.appendChild(previewDiv);
     
         return previewOverlayDiv;
     }
@@ -171,11 +201,11 @@ class FileUpload {
     //check for file validations for now just size and type
     fileValidation(file) {
         if(file.size > this.mbToBytes()){
-            this.handleValidationError('File size Exceed')
-            return false
+            this.handleValidationError('File size Exceed');
+            return false;
         } else if(!this.matchFileType(file)){
-            this.handleValidationError('Not a valid File type')
-            return false
+            this.handleValidationError('Not a valid File type');
+            return false;
         }
         return true;
     }
@@ -183,14 +213,14 @@ class FileUpload {
     //triggers user supplied onError action
     handleValidationError(msg) {
         if(this.onError)
-            this.onError(msg)
+            this.onError(msg);
         else
-            this.justAlert(msg)
+            this.justAlert(msg);
     }
 
     matchFileType(file) {
         if(!this.vaildFiles)
-            return true
+            return true;
 
         const validExtensions = this.vaildFiles.join('|');
         const validFileRegex = new RegExp(`(.*?)\.(${validExtensions})$`);
@@ -201,26 +231,26 @@ class FileUpload {
     }
 
     justAlert(msg) {
-        this.log(msg)
+        this.log(msg);
         alert(msg);
     }
 
     isFunction (value) {
-        return toString.call(value) === '[object Function]' || typeof value === 'function'
+        return toString.call(value) === '[object Function]' || typeof value === 'function';
     }
 
     isString (value) {
-        return typeof value === 'string'
+        return typeof value === 'string';
     }
 
     mbToBytes() {
-        const maxSize = this.maxSize || 2
-        return maxSize*1000000
+        const maxSize = this.maxSize || 2;
+        return maxSize*1000000;
     }
 
     log(err) {
         if (this.debug)
-            console.log(err)
+            console.log(err);
     }
 }
 window.module = window.module || {};

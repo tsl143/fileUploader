@@ -1,4 +1,5 @@
 <html>
+    <meta charset="utf-8">
     <style>
         #imageUpload {
             display: flex;
@@ -25,6 +26,8 @@
             onFail: onError,
             onClose: jobDone,
             maxSize: 2,
+            actionURL: 'https://www.example.com/uploadURL',
+            userData: 'catsPlease',
             debug: true
         })
 

@@ -1,11 +1,18 @@
 const FileUpload = require('../dist/script');
+//fix for XHR test using JEST
+const xhrMockClass = () => ({
+    open: jest.fn(),
+    send: jest.fn(),
+    setRequestHeader: jest.fn()
+});
+window.XMLHttpRequest = jest.fn().mockImplementation(xhrMockClass);
 
 describe('FileUpload', () => {
 
     //set up the dummy imageupload element on which the library will be targetted
     const fileUploadDiv = document.createElement('div');
     fileUploadDiv.setAttribute('id','imageUpload');
-    document.body.appendChild(fileUploadDiv)
+    document.body.appendChild(fileUploadDiv);
 
     const params = {
         targetElement: 'imageUpload',
@@ -14,9 +21,10 @@ describe('FileUpload', () => {
         onError: msg => console.log(msg),
         onFail: msg => console.log(msg),
         onClose: () => console.log('Job Done'),
+        actionURL: 'action.json',
         maxSize: 3,
         debug: true
-    }
+    };
     const handle = new FileUpload(params);
 
     //setup fake file
@@ -24,7 +32,7 @@ describe('FileUpload', () => {
     fakeFile.lastModified = 1505998858000;
     fakeFile.name = "testfile.png";
 
-    const fakeDiv = document.createElement('div')
+    const fakeDiv = document.createElement('div');
 
     it('checks all input parameters', () => {
         expect(handle.checkParams()).toBe(true);
@@ -63,31 +71,31 @@ describe('FileUpload', () => {
 
     it('checks sendResponse', () => {
 
-        const spy = jest.spyOn(handle, 'onSuccess');
-        handle.sendReponse({})
+        const spy = jest.spyOn(handle, 'uploadFileToServer');
+        handle.sendReponse({});
         expect(spy).toHaveBeenCalled();
     });
 
     it('checks handleValidationError', () => {
         //with error function passed in parameter
         const spy = jest.spyOn(handle, 'onError');
-        handle.handleValidationError('some-error')
+        handle.handleValidationError('some-error');
         expect(spy).toHaveBeenCalled();
         //without error function passed in parameter
         const newParams = Object.assign( {}, params );
-        delete(newParams.onError)
-        const newHandle = new FileUpload(newParams)
+        delete(newParams.onError);
+        const newHandle = new FileUpload(newParams);
         const newSpy = jest.spyOn(newHandle, 'justAlert');
-        newHandle.handleValidationError('some-error')
+        newHandle.handleValidationError('some-error');
         expect(newSpy).toHaveBeenCalled();
     });
 
     it('checks justAlert', () => {
         const spy = jest.spyOn(handle, 'log');
         const alertSpy = jest.spyOn(window, 'alert');
-        handle.justAlert('random-message')
-        expect(spy).toHaveBeenCalled()
-        expect(alertSpy).toHaveBeenCalled()
+        handle.justAlert('random-message');
+        expect(spy).toHaveBeenCalled();
+        expect(alertSpy).toHaveBeenCalled();
     });
 
     it('checks isFunction', () => {
@@ -104,8 +112,8 @@ describe('FileUpload', () => {
     it('checks mbToBytes', () => {
         expect(handle.mbToBytes()).toBe(3000000);
         const newParams = Object.assign( {}, params );
-        delete(newParams.maxSize)
-        const newHandle = new FileUpload(newParams)
+        delete(newParams.maxSize);
+        const newHandle = new FileUpload(newParams);
         expect(newHandle.mbToBytes()).toBe(2000000);
     });
 
@@ -113,6 +121,11 @@ describe('FileUpload', () => {
         const spy = jest.spyOn(handle, 'createFileElement');
         fileUploadDiv.click();
         expect(spy).toHaveBeenCalled();   
+    });
+
+    it('checks parseUpload', () => {
+        fakeFile.size = 100000000;
+        expect(handle.parseUpload(fakeFile)).toBeFalsy();
     });
 
     it('checks handleClose', () => {
@@ -127,9 +140,9 @@ describe('FileUpload', () => {
         expect(spy).toHaveBeenCalled();
 
         const newParams = Object.assign( {}, params );
-        delete(newParams.onFail)
+        delete(newParams.onFail);
         const spyLog = jest.spyOn(handle, 'log');
-        const newHandle = new FileUpload(newParams)
+        const newHandle = new FileUpload(newParams);
         newHandle.handleFail('test');
         expect(spyLog).toHaveBeenCalled();
     });
@@ -138,7 +151,7 @@ describe('FileUpload', () => {
         const result = { target: { result: 'done'} };
         const spy = jest.spyOn(handle, 'sendReponse');
         handle.handleUploadSuccess(result);
-        expect(document.body.children.length).toBeGreaterThan(1)
+        expect(document.body.children.length).toBeGreaterThan(1);
         expect(spy).toHaveBeenCalled();
     });
 
@@ -148,12 +161,12 @@ describe('FileUpload', () => {
         //dispatch change event for file element
         const evt = document.createEvent("HTMLEvents");
         evt.initEvent("change", false, true);
-        fileElement.dispatchEvent(evt)
+        fileElement.dispatchEvent(evt);
         expect(spy).toHaveBeenCalled(); 
     });
 
-    it('checks parseUpload', () => {
-         fakeFile.size = 100000000;
-         expect(handle.parseUpload(fakeFile)).toBeFalsy();
+    it('checks formatData', () => {
+        const testObject = { a:10, b:20 };
+        expect(handle.formatData(testObject)).toBe('a=10&b=20');
     });
 });
