@@ -1,0 +1,52 @@
+<html>
+    <meta charset="utf-8">
+    <style>
+        #imageUpload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            height: 150px;
+            background: #b9b9b9;
+            margin: auto
+        }
+        #result {
+            display: block;
+            margin: 20px auto;
+            width: 200px;
+        }
+    </style>
+    <body>
+        <div id="imageUpload">
+            <h3>Upload here</h3>
+        </div>
+        <pre id="result"></pre>
+    </body>
+    <script src="../dist/script.js"> </script>
+    <script>
+        const divv = new FileUpload({
+            targetElement: 'imageUpload',
+            vaildFiles: ['png','jpg','gif','txt'],
+            onSuccess: onSuccess,
+            onClose: jobDone,
+            maxSize: 2,
+            userData: 'catsPlease',
+            debug: true
+        })
+
+        function onError(msg){
+            console.log(msg)
+            document.getElementById('result').textContent = ''
+        }
+        function jobDone(){
+            console.log('Job Done')
+        }
+
+        function onSuccess(data) {
+            if(data.dataUrl)
+                delete data.dataUrl
+            const prettyResponse = JSON.stringify(data,null,2)
+            document.getElementById('result').textContent = prettyResponse
+        }    
+    </script>
+</html>
