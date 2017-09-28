@@ -1,6 +1,8 @@
 # fileUploader
 A small vanilla JS utility which modifies the way you upload file. Before uploading it to server, you can preview the file(right now only image preview available). This plugin accepts a target element(can be a div, button anything), on click of which browse file popup is shown, after successful upload it returns a File object with data URL and other file attributes.
 
+Demo - [fileUplaoder Demo](https://tsl143.github.io/fileUploader/demo/)
+
 * * *
 
 ### Features
